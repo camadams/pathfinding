@@ -5,11 +5,22 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="p5.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <title>Pathfinding</title>
   </head>
   <body>
-    <div class="project-container"></div>
+    <nav class="flex items-center justify-evenly m-5">
+      <div class="m-2 text-center rounded-md p-2">
+        <a href="/">Home</a>
+      </div>
+      <div class="m-2 text-center rounded-md p-2">
+        <a href="/bio.html">Bio</a>
+      </div>
+    </nav>
+    <div class="flex justify-center">
+      <div id="project-container" style="margin: auto"></div>
+    </div>
     <script>
       class Edge {
         constructor(x1, y1, x2, y2, weight) {
@@ -123,20 +134,26 @@
       var clsd = []; //Map<Node, vareger>
 
       //////////// setup //////////////
-
+      let button;
+      function changeBG() {
+        isRunning = true;
+      }
       function setup() {
         ////////////////// Working with the DOM (not used for this OpenProcessing project) ///////////////////
+        button = createButton('click me');
+        button.mousePressed(changeBG);
         var a = 300;
         var b = 300;
         // var canvas = createCanvas(windowWidth, windowWidth);
         var canvas = createCanvas(a, b);
         // var canvas = createCanvas(width, height);
 
-        var cont = document.querySelector('.project-container');
+        // var cont = document.querySelector('.project-container');
         // var divFR = document.querySelector('#fr');
         // cont.insertBefore(canvas, divFR);
         // document.getElementById('cav').innerHTML = canvas;
-        document.getElementsByClassName('project-container').innerHTML = canvas;
+        // document.getElementsByClassName('project-container').innerHTML = canvas;
+        canvas.parent('project-container');
         background(230);
         R = height / rowInterval;
         C = width / colInterval;
