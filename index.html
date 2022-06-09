@@ -97,8 +97,8 @@
       var debug = false;
 
       // ******************** PRAMAS TO PLAY WITH ***************
-      var rowInterval = 45; // height divided by rowvarerval = #rows of nodes
-      var colInterval = 45; // width divided by colvarerval = #cols of nodes
+      var rowInterval = 30; // height divided by rowvarerval = #rows of nodes
+      var colInterval = 30; // width divided by colvarerval = #cols of nodes
       var maxWeight = 200; // maxWeight of a red branch -- really makes the algo search long for cheaper paths if this is high
       var probabilityCutNeighbourConnection = 20; // sparsity of the graph
       var probabilityMakeEdgeMaxWeight = 33; // sparsity of the graph
@@ -126,7 +126,10 @@
 
       function setup() {
         ////////////////// Working with the DOM (not used for this OpenProcessing project) ///////////////////
-        var canvas = createCanvas(900, 900);
+        var a = 300;
+        var b = 300;
+        // var canvas = createCanvas(windowWidth, windowWidth);
+        var canvas = createCanvas(a, b);
         // var canvas = createCanvas(width, height);
 
         var cont = document.querySelector('.project-container');
