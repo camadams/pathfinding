@@ -4,8 +4,331 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="p5.min.js"></script>
+
     <title>Pathfinding</title>
   </head>
-  <body></body>
+  <body>
+    <div class="project-container"></div>
+    <script>
+      class Edge {
+        constructor(x1, y1, x2, y2, weight) {
+          this.x1 = x1;
+          this.y1 = y1;
+          this.x2 = x2;
+          this.y2 = y2;
+          this.weight = weight;
+          this.col = lerpColor(best, worst, this.weight / maxWeight);
+          //this.col = lerpColor(best, worst, sqrt( sq(x1-x2)+sq(y1-y2) ) / sqrt( sq(rowInterval)+sq(colInterval)) );
+        }
+        show() {
+          //strokeWeight(map(weight, 0,maxWeight, 0,5));
+          stroke(this.col);
+          strokeWeight(2);
+          line(this.x1, this.y1, this.x2, this.y2);
+        }
+      }
+
+      class Node {
+        // float x;
+        // float y;
+        // int r;
+        // int c;
+        // ArrayList<Node> neighbours;
+        // ArrayList<Node> cutOff;
+        // String state;
+        // float h;
+        // int g; // g(node) is the cost of the path from the start node to node
+        // float f; // f(node) = g(node) + h(node)
+        // Node prev;
+        // //String col = "";
+
+        constructor(x, y, r, c) {
+          this.x = x;
+          this.y = y;
+          this.r = r;
+          this.c = c;
+          this.neighbours = [];
+          this.cutOff = [];
+          this.state = 'none';
+        }
+
+        show() {
+          if (this.state == 'start') {
+            fill(0, 255, 0);
+          } else if (this.state == 'rearrived') {
+            fill(255, 140, 0);
+          } else if (this.state == 'end') {
+            fill(255, 0, 0);
+          } else if (this.state == 'closed') {
+            if (debug) {
+              line(this.x - 10, this.y - 10, this.x + 10, this.y + 10);
+              line(this.x - 10, this.y + 10, this.x + 10, this.y - 10);
+            }
+            fill(0, 0, 255);
+          } else if (this.state == 'open') {
+            noFill();
+            ellipse(this.x, this.y, 20, 20);
+            fill(128);
+          } else {
+            fill(255);
+          }
+          stroke(40);
+          //strokeWeight(0.9);
+          ellipse(this.x, this.y, 9, 9);
+
+          if (debug) {
+            fill(0);
+            textSize(10);
+            text(
+              'g:' + this.g + ' h:' + int(this.h) + ' f:' + int(this.f),
+              this.x + 10,
+              this.y
+            );
+          }
+        }
+
+        toString() {
+          return 'x:' + this.x + ' y:' + this.y + ' this.f:' + this.f;
+        }
+      }
+
+      //////////// Global Variables ///////////////
+      var debug = false;
+
+      // ******************** PRAMAS TO PLAY WITH ***************
+      var rowInterval = 45; // height divided by rowvarerval = #rows of nodes
+      var colInterval = 45; // width divided by colvarerval = #cols of nodes
+      var maxWeight = 200; // maxWeight of a red branch -- really makes the algo search long for cheaper paths if this is high
+      var probabilityCutNeighbourConnection = 20; // sparsity of the graph
+      var probabilityMakeEdgeMaxWeight = 33; // sparsity of the graph
+      // ******************************************************
+
+      var R;
+      var C;
+      var nodes = []; // 2d array of node objects
+      var dir = [0, -1, 0, 1, 0];
+      var edges; // 2d array of edge objects
+      var edgesToRender = [];
+      var best;
+      var worst;
+      var nextFlag = 'start';
+
+      ////////////// Global variables for A star
+
+      var isRunning = false;
+      var startNode;
+      var endNode;
+      var frontier = []; // priority queuue of node objects
+      var clsd = []; //Map<Node, vareger>
+
+      //////////// setup //////////////
+
+      function setup() {
+        ////////////////// Working with the DOM (not used for this OpenProcessing project) ///////////////////
+        var canvas = createCanvas(900, 900);
+        // var canvas = createCanvas(width, height);
+
+        var cont = document.querySelector('.project-container');
+        // var divFR = document.querySelector('#fr');
+        // cont.insertBefore(canvas, divFR);
+        // document.getElementById('cav').innerHTML = canvas;
+        document.getElementsByClassName('project-container').innerHTML = canvas;
+        background(230);
+        R = height / rowInterval;
+        C = width / colInterval;
+        /////////// Generate 2d array of nodes with x,y coords ///////////
+        for (var r = 0; r < R; r++) {
+          nodes[r] = [];
+          for (var c = 0; c < C; c++) {
+            var y =
+              r * rowInterval +
+              rowInterval / 2 +
+              random(-rowInterval / 3, rowInterval / 3);
+            var x =
+              c * colInterval +
+              colInterval / 2 +
+              random(-colInterval / 3, colInterval / 3);
+            nodes[r][c] = new Node(x, y, r, c);
+            clsd[r * R + c] = 1000000;
+          }
+        }
+        best = color(0, 255, 0);
+        worst = color(255, 0, 0);
+        ///////// Generate node neighbours and edges /////////////
+        edges = [];
+        for (var r = 0; r < R * C; r++) {
+          edges[r] = [];
+        }
+        for (var r = 0; r < R; r++) {
+          for (var c = 0; c < C; c++) {
+            for (var i = 0; i < 4; i++) {
+              var nR = r + dir[i];
+              var nC = c + dir[i + 1];
+              // if new direction is valid, continue
+              if (nR < 0 || nR >= R || nC < 0 || nC >= C) continue;
+              // if new directions' neighbours contain me (r,c)
+              if (nodes[nR][nC].neighbours.includes(nodes[r][c])) {
+                // add new direction to my neighbours and continue
+                nodes[r][c].neighbours.push(nodes[nR][nC]);
+                continue;
+                // if not, see if new direction neighbours cut me off previously
+              } else if (nodes[nR][nC].cutOff.includes(nodes[r][c])) {
+                nodes[r][c].cutOff.push(nodes[nR][nC]); // just in case
+                continue;
+              } else {
+                if (random(100) < probabilityCutNeighbourConnection) {
+                  nodes[r][c].cutOff.push(nodes[nR][nC]);
+                } else {
+                  nodes[r][c].neighbours.push(nodes[nR][nC]);
+                  var e = new Edge(
+                    nodes[r][c].x,
+                    nodes[r][c].y,
+                    nodes[nR][nC].x,
+                    nodes[nR][nC].y,
+                    random(100) < probabilityMakeEdgeMaxWeight ? 1 : maxWeight
+                  );
+                  edges[r * R + c][nR * R + nC] = e;
+                  edges[nR * R + nC][r * R + c] = e;
+                  // NOTE: Optimization1 -- adding an array for rendering edges.
+                  // Looping through the 'edges' map/array is (R*C)^2
+                  // Looping through edges to render will be ~ R*C s
+                  edgesToRender.push(e);
+                }
+              }
+            }
+          }
+        }
+        // frameRate(10);
+      }
+
+      function draw() {
+        // HTML dom, not for this project
+        // document.getElementById('fr').innerHTML =
+        //   'Frame Rate: ' + Math.round(frameRate());
+        background(230);
+        // Optimization1
+        for (const e of edgesToRender) {
+          e.show();
+        }
+        // for (const edgeRow of edges) {
+        //   for (const e of edgeRow) {
+        //     if(e) e.show();
+        //   }
+        // }
+        for (const nodeRow of nodes) {
+          for (const n of nodeRow) {
+            n.show();
+          }
+        }
+        if (isRunning) {
+          // Finding the min
+          // TODO: implement priority queue for optimization
+          var node;
+          var minF = 100000;
+          var idx;
+          for (var i = 0; i < frontier.length; i++) {
+            var n = frontier[i];
+            if (n.f < minF) {
+              minF = n.f;
+              node = n;
+              idx = i;
+            }
+          }
+          // Case where there is no path from start to end
+          if (node === undefined) {
+            console.log('node popped off frontier is undefined.');
+            text(
+              'NO PATH FROM START TO END \nPRESS RESTART',
+              width / 2,
+              height / 2
+            );
+            noLoop();
+          }
+          node.state = 'closed';
+          frontier.splice(idx, 1);
+          // Draw the current path
+          var temp = node;
+          while (temp !== undefined && temp != null) {
+            if (temp.prev === undefined || temp.prev == null) break;
+            strokeWeight(10);
+            stroke(0, 100);
+            line(temp.x, temp.y, temp.prev.x, temp.prev.y);
+            temp = temp.prev;
+          }
+          var y = node.y;
+          var x = node.x;
+          var r = node.r;
+          var c = node.c;
+          fill(225, 225, 10, 150);
+          ellipse(x, y, 20, 20);
+          // If we reach the end, stop
+          if (x == endNode.x && y == endNode.y) {
+            console.log(
+              'Reached the end node, and have the cheapest path! Press refresh to start again.'
+            );
+            noLoop();
+          }
+          // A star algorithm
+          if (clsd[r * R + c] > node.g) {
+            clsd[r * R + c] = node.g;
+            for (const nei of node.neighbours) {
+              var nR = nei.r;
+              var nC = nei.c;
+              if (clsd[nR * R + nC] != 1000000) {
+                continue;
+              }
+              nei.h = sqrt(sq(endNode.x - nei.x) + sq(endNode.y - nei.y));
+              nei.h = 0;
+              nei.g = node.g + edges[nR * R + nC][r * R + c].weight;
+              nei.f = nei.g + nei.h;
+              nei.prev = node;
+              nei.state = 'open';
+              frontier.push(nei);
+            }
+          }
+        }
+      }
+
+      function keyPressed() {
+        if (key == 'd') {
+          debug = !debug;
+        } else if (key == 'r') {
+          refresh = true;
+        } else if (key == 'g') {
+          // frameRate(1)
+          isRunning = true;
+        }
+      }
+
+      function mousePressed() {
+        for (const nodeRow of nodes) {
+          for (const n of nodeRow) {
+            if (dist(mouseX, mouseY, n.x, n.y) < 10) {
+              if (n.state != 'none') {
+                n.state = 'none';
+              } else if (nextFlag == 'start') {
+                n.state = 'start';
+                startNode = n;
+                startNode.g = 0;
+                startNode.prev = null;
+                nextFlag = 'end';
+              } else {
+                n.state = 'end';
+                nextFlag = 'start';
+                endNode = n;
+                startNode.h = int(
+                  sqrt(
+                    sq(endNode.x - startNode.x) + sq(endNode.y - startNode.y)
+                  )
+                );
+                startNode.f = startNode.g + startNode.h;
+                frontier.push(startNode);
+              }
+            }
+          }
+        }
+      }
+    </script>
+  </body>
 </html>
-l
