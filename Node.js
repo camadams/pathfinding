@@ -11,7 +11,7 @@ class Node {
   // float f; // f(node) = g(node) + h(node)
   // Node prev;
   // //String col = "";
-
+  static CLOSED = 0;
   constructor(x, y, r, c) {
     this.x = x;
     this.y = y;

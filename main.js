@@ -5,11 +5,11 @@
 var debug = false;
 
 // ******************** PRAMAS TO PLAY WITH ***************
-var nodesPerRow = 15;
-var nodesPerCol = 15;
+var nodesPerRow = 20;
+var nodesPerCol = 20;
 var maxWeight = 200; // maxWeight of a red branch -- really makes the algo search long for cheaper paths if this is high
-var probabilityCutNeighbourConnection = 0; // sparsity of the graph
-var probabilityMakeEdgeMaxWeight = 100; // sparsity of the graph
+var probabilityCutNeighbourConnection = 20; // sparsity of the graph
+var probabilityMakeEdgeMaxWeight = 200; // sparsity of the graph
 // ******************************************************
 
 var nodes = []; // 2d array of node objects
@@ -45,8 +45,8 @@ function setup() {
   for (var r = 0; r < nodesPerRow; r++) {
     nodes[r] = [];
     for (var c = 0; c < nodesPerCol; c++) {
-      var y = r * rowInterval + rowInterval / 2; // + random(-rowInterval / 3, rowInterval / 3);
-      var x = c * colInterval + colInterval / 2; //+ random(-colInterval / 3, colInterval / 3);
+      var y = r * rowInterval + rowInterval / 2 + random(-rowInterval / 2, rowInterval / 2);
+      var x = c * colInterval + colInterval / 2 + random(-colInterval / 2, colInterval / 2);
       nodes[r][c] = new Node(x, y, r, c);
       clsd[r * nodesPerRow + c] = 1000000;
     }
@@ -79,7 +79,11 @@ function setup() {
             nodes[r][c].cutOff.push(nodes[rN][cN]);
           } else {
             nodes[r][c].neighbours.push(nodes[rN][cN]);
-            var e = new Edge(nodes[r][c].x, nodes[r][c].y, nodes[rN][cN].x, nodes[rN][cN].y, random(100) < probabilityMakeEdgeMaxWeight ? 1 : maxWeight);
+            var e = new Edge(nodes[r][c].x, nodes[r][c].y, nodes[rN][cN].x, nodes[rN][cN].y);
+            var eLen = sqrt((e.x2 - e.x1) ** 2 + (e.y2 - e.y1) ** 2);
+            e.weight = map(eLen, 0, rowInterval * sqrt(2), maxWeight, 0);
+            e.col = lerpColor(best, worst, (e.weight / rowInterval) * sqrt(2));
+
             edges[r * nodesPerRow + c][rN * nodesPerRow + cN] = e;
             edges[rN * nodesPerRow + cN][r * nodesPerRow + c] = e;
             // NOTE: Optimization1 -- adding an array for rendering edges.
@@ -94,82 +98,95 @@ function setup() {
   // frameRate(10);
 }
 
-function draw() {
-  // HTML dom, not for this project
+function renderNodesEdgesAndFrameRate() {
   background(230);
-  frameRateDiv.innerHTML = 'Frame Rate: ' + Math.round(frameRate());
-  // Optimization1
   for (const e of edgesToRender) {
     e.show();
   }
-
   for (const nodeRow of nodes) {
     for (const n of nodeRow) {
       n.show();
     }
   }
+  frameRateDiv.innerHTML = 'Frame Rate: ' + Math.round(frameRate());
+}
+
+function findNextNode() {
+  var currentNode;
+  var minF = 100000;
+  var idx;
+  for (var i = 0; i < frontier.length; i++) {
+    var nodeInFrontier = frontier[i];
+    if (nodeInFrontier.f < minF) {
+      minF = nodeInFrontier.f;
+      currentNode = nodeInFrontier;
+      idx = i;
+    }
+  }
+  return [currentNode, idx];
+}
+
+function handleNoNextNode(currentNode) {
+  // Case where there is no path from start to end
+  if (currentNode === undefined) {
+    console.log('node popped off frontier is undefined.');
+    text('NO PATH FROM START TO END \nPRESS RESTART', width / 2, height / 2);
+    noLoop();
+  }
+}
+
+function drawPathToCurrentNode(currentNode) {
+  var temp = currentNode;
+  while (temp !== undefined && temp != null) {
+    if (temp.prev === undefined || temp.prev == null) break;
+    strokeWeight(10);
+    stroke(0, 100);
+    line(temp.x, temp.y, temp.prev.x, temp.prev.y);
+    temp = temp.prev;
+  }
+}
+
+function checkIfAtGoalNode(currentNode) {
+  if (currentNode.x == endNode.x && currentNode.y == endNode.y) {
+    console.log('Reached the end node, and have the cheapest path! Press refresh to start again.');
+    noLoop();
+  }
+}
+function draw() {
+  renderNodesEdgesAndFrameRate();
   if (isRunning) {
-    // Finding the min
-    // TODO: implement priority queue for optimization
-    var node;
-    var minF = 100000;
-    var idx;
-    for (var i = 0; i < frontier.length; i++) {
-      var n = frontier[i];
-      if (n.f < minF) {
-        minF = n.f;
-        node = n;
-        idx = i;
-      }
-    }
-    // node = frontier.shift();
-    // idx = 0;
-    // Case where there is no path from start to end
-    if (node === undefined) {
-      console.log('node popped off frontier is undefined.');
-      text('NO PATH FROM START TO END \nPRESS RESTART', width / 2, height / 2);
-      noLoop();
-    }
-    node.state = 'closed';
+    var currentNode = findNextNode()[0];
+    var idx = findNextNode()[1];
+    handleNoNextNode(currentNode);
+    drawPathToCurrentNode(currentNode);
+    checkIfAtGoalNode(currentNode);
+
     frontier.splice(idx, 1);
-    // Draw the current path
-    var temp = node;
-    while (temp !== undefined && temp != null) {
-      if (temp.prev === undefined || temp.prev == null) break;
-      strokeWeight(10);
-      stroke(0, 100);
-      line(temp.x, temp.y, temp.prev.x, temp.prev.y);
-      temp = temp.prev;
-    }
-    var y = node.y;
-    var x = node.x;
-    var r = node.r;
-    var c = node.c;
+    var y = currentNode.y;
+    var x = currentNode.x;
+    var r = currentNode.r;
+    var c = currentNode.c;
+
     fill(225, 225, 10, 150);
     ellipse(x, y, 20, 20);
-    // If we reach the end, stop
-    if (x == endNode.x && y == endNode.y) {
-      console.log('Reached the end node, and have the cheapest path! Press refresh to start again.');
-      noLoop();
-    }
+
     // A star algorithm
-    if (clsd[r * nodesPerRow + c] > node.g) {
-      clsd[r * nodesPerRow + c] = node.g;
-      for (const nei of node.neighbours) {
-        var nR = nei.r;
-        var nC = nei.c;
-        if (clsd[nR * nodesPerRow + nC] != 1000000) {
+    if (clsd[r * nodesPerRow + c] > currentNode.g) {
+      clsd[r * nodesPerRow + c] = currentNode.g;
+      for (const nei of currentNode.neighbours) {
+        if (clsd[nei.r * nodesPerRow + nei.c] != 1000000) {
           continue;
         }
-        nei.h = sqrt(sq(endNode.x - nei.x) + sq(endNode.y - nei.y));
-        //    nei.h = 0;
-        nei.g = node.g + edges[nR * nodesPerRow + nC][r * nodesPerRow + c].weight;
+        // nei.h = sqrt(sq(endNode.x - nei.x) + sq(endNode.y - nei.y));
+        nei.h = 0;
+        nei.g = currentNode.g + edges[nei.r * nodesPerRow + nei.c][r * nodesPerRow + c].weight;
         nei.f = nei.g + nei.h;
-        nei.prev = node;
+        nei.prev = currentNode;
         nei.state = 'open';
         frontier.push(nei);
       }
     }
+    currentNode.state = Node.CLOSED;
   }
 }
 
