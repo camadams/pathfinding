@@ -5,8 +5,8 @@
 var debug = false;
 
 // ******************** PRAMAS TO PLAY WITH ***************
-var nodesPerRow = 20;
-var nodesPerCol = 20;
+var nodesPerRow = 10;
+var nodesPerCol = 10;
 var maxWeight = 200; // maxWeight of a red branch -- really makes the algo search long for cheaper paths if this is high
 var probabilityCutNeighbourConnection = 20; // sparsity of the graph
 var probabilityMakeEdgeMaxWeight = 200; // sparsity of the graph
