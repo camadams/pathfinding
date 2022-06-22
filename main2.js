@@ -5,8 +5,8 @@
 var debug = false;
 
 // ******************** PRAMAS TO PLAY WITH ***************
-var nodesPerRow = 10;
-var nodesPerCol = 10;
+var nodesPerRow = 2;
+var nodesPerCol = 2;
 var maxWeight = 200; // maxWeight of a red branch -- really makes the algo search long for cheaper paths if this is high
 var probabilityCutNeighbourConnection = 20; // sparsity of the graph
 var probabilityMakeEdgeMaxWeight = 200; // sparsity of the graph
@@ -22,7 +22,7 @@ var nextFlag = 'start';
 
 ////////////// Global variables for A star
 
-var isRunning = false;
+var generateShortestPaths = false;
 var startNode;
 var endNode;
 var unvisited = []; // priority queuue of node objects
@@ -32,6 +32,9 @@ var visited = []; //Map<Node, vareger>
 // let button;
 function changeBG() {
   isRunning = true;
+}
+function setGenerateShortestPathsToTrue() {
+  generateShortestPaths = true;
 }
 function setup() {
   ////////////////// Working with the DOM (not used for this OpenProcessing project) ///////////////////
@@ -47,7 +50,9 @@ function setup() {
     for (var c = 0; c < nodesPerCol; c++) {
       var y = r * rowInterval + rowInterval / 2 + random(-rowInterval / 2, rowInterval / 2);
       var x = c * colInterval + colInterval / 2 + random(-colInterval / 2, colInterval / 2);
-      nodes[r][c] = new Node(x, y, r, c);
+      var node = new Node(x, y, r, c);
+      nodes[r][c] = node;
+      unvisited.push(node);
       visited[r * nodesPerRow + c] = Number.MAX_VALUE;
     }
   }
@@ -113,7 +118,7 @@ function renderNodesEdgesAndFrameRate() {
 
 function findNextNode() {
   var currentNode;
-  var minF = 100000;
+  var minF = Number.MAX_VALUE;
   var idx;
   for (var i = 0; i < unvisited.length; i++) {
     var nodeInFrontier = unvisited[i];
@@ -152,42 +157,95 @@ function checkIfAtGoalNode(currentNode) {
     noLoop();
   }
 }
-function draw() {
-  renderNodesEdgesAndFrameRate();
-  if (isRunning) {
-    var currentNode = findNextNode()[0];
-    var idx = findNextNode()[1];
-    handleNoNextNode(currentNode);
-    drawPathToCurrentNode(currentNode);
-    checkIfAtGoalNode(currentNode);
 
-    unvisited.splice(idx, 1);
-    var y = currentNode.y;
-    var x = currentNode.x;
-    var r = currentNode.r;
-    var c = currentNode.c;
+function getMin(arr) {
+  var result;
+  var currentMinCostFromStart = Number.MAX_VALUE;
+  var idx;
+  for (var i = 0; i < arr.length; i++) {
+    var node = arr[i];
+    if (node.minCostFromStart < currentMinCostFromStart) {
+      currentMinCostFromStart = node.minCostFromStart;
+      result = node;
+      idx = i;
+    }
+  }
+  arr.splice(idx, 1);
+  return result;
+}
+var iter = 0;
+function generate() {
+  while (unvisited.length !== 0 && iter++ < 500) {
+    if (startNode === undefined) {
+      alert('choose a start node');
+      return;
+    }
+    current = getMin(unvisited);
 
-    fill(225, 225, 10, 150);
-    ellipse(x, y, 20, 20);
+    if (current === undefined) {
+      return;
+    }
 
-    // A star algorithm
-    if (visited[r * nodesPerRow + c] > currentNode.g) {
-      visited[r * nodesPerRow + c] = currentNode.g;
-      for (const nei of currentNode.neighbours) {
-        if (visited[nei.r * nodesPerRow + nei.c] != Number.MAX_VALUE) {
-          continue;
-        }
-        // nei.h = sqrt(sq(endNode.x - nei.x) + sq(endNode.y - nei.y));
-        nei.h = 0;
-        nei.g = currentNode.g + edges[nei.r * nodesPerRow + nei.c][r * nodesPerRow + c].weight;
-        nei.f = nei.g + nei.h;
-        nei.prev = currentNode;
-        nei.state = 'open';
-        unvisited.push(nei);
+    for (const nei of current.neighbours) {
+      var costOfEdge = edges[nei.r * nodesPerRow + nei.c][current.r * nodesPerRow + current.c].weight;
+      var costToNeighbourFromCurrent = current.minCostFromStart + costOfEdge;
+      if (costToNeighbourFromCurrent < nei.minCostFromStart) {
+        nei.minCostFromStart = costToNeighbourFromCurrent;
+        nei.prev = current;
       }
     }
-    currentNode.state = Node.CLOSED;
+
+    visited.push(current);
   }
+}
+
+function draw() {
+  if (generateShortestPaths == true) {
+    generate();
+    console.log('done');
+    generateShortestPaths = false;
+  }
+  renderNodesEdgesAndFrameRate();
+
+  if (endNode !== undefined || endNode != null) {
+    console.log('endNode defined');
+    console.log(endNode);
+    drawPathToCurrentNode(endNode);
+  }
+  // if (isRunning) {
+  //   var currentNode = findNextNode()[0];
+  //   var idx = findNextNode()[1];
+  //   handleNoNextNode(currentNode);
+  //   drawPathToCurrentNode(currentNode);
+  //   checkIfAtGoalNode(currentNode);
+
+  //   frontier.splice(idx, 1);
+  //   var y = currentNode.y;
+  //   var x = currentNode.x;
+  //   var r = currentNode.r;
+  //   var c = currentNode.c;
+
+  //   fill(225, 225, 10, 150);
+  //   ellipse(x, y, 20, 20);
+
+  //   // A star algorithm
+  //   if (clsd[r * nodesPerRow + c] > currentNode.g) {
+  //     clsd[r * nodesPerRow + c] = currentNode.g;
+  //     for (const nei of currentNode.neighbours) {
+  //       if (clsd[nei.r * nodesPerRow + nei.c] != Number.MAX_VALUE) {
+  //         continue;
+  //       }
+  //       // nei.h = sqrt(sq(endNode.x - nei.x) + sq(endNode.y - nei.y));
+  //       nei.h = 0;
+  //       nei.g = currentNode.g + edges[nei.r * nodesPerRow + nei.c][r * nodesPerRow + c].weight;
+  //       nei.f = nei.g + nei.h;
+  //       nei.prev = currentNode;
+  //       nei.state = 'open';
+  //       frontier.push(nei);
+  //     }
+  //   }
+  //   currentNode.state = Node.CLOSED;
+  // }
 }
 
 function keyPressed() {
@@ -211,15 +269,15 @@ function mouseClicked() {
           n.state = 'start';
           startNode = n;
           startNode.g = 0;
-          startNode.prev = null;
           nextFlag = 'end';
+          startNode.minCostFromStart = 0;
+          unvisited.push(startNode);
         } else {
           n.state = 'end';
           nextFlag = 'start';
           endNode = n;
           startNode.h = int(sqrt(sq(endNode.x - startNode.x) + sq(endNode.y - startNode.y)));
           startNode.f = startNode.g + startNode.h;
-          unvisited.push(startNode);
         }
       }
     }

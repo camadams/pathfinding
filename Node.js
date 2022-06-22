@@ -20,6 +20,8 @@ class Node {
     this.neighbours = [];
     this.cutOff = [];
     this.state = 'none';
+    this.prev = null;
+    this.minCostFromStart = Number.MAX_VALUE;
   }
 
   show() {
@@ -44,7 +46,7 @@ class Node {
     }
     stroke(40);
     //strokeWeight(0.9);
-    ellipse(this.x, this.y, 9, 9);
+    ellipse(this.x, this.y, 7);
 
     if (debug) {
       fill(0);
