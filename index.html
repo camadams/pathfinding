@@ -12,8 +12,8 @@
     <title>Pathfinding</title>
   </head>
   <body>
-    <main class="max-w-4xl h-screen m-auto p-5">
-      <nav class="flex items-center justify-evenly m-5">
+    <main class="max-w-4xl h-screen m-auto px-5">
+      <nav class="flex items-center justify-evenly">
         <div class="m-2 text-center rounded-md p-2">
           <a href="/">Home</a>
         </div>
@@ -22,12 +22,18 @@
         </div>
       </nav>
       <div class="flex justify-center items-center flex-col">
+        <div class="mb-3 text-xs text-gray-700">
+          From my research, a popular 'algorithm project' on software developers' portfolios, was path finding. Most projects I saw used a grid and a feature to draw obstacles for the algorithm to
+          find a path around. I wanted to try use a graph, which ended up taking most of my time. I used Djisktras algorithm to find the shortest path from any node to any other node.
+          <br /><br />
+          Start by clicking a 'start' node, then clicking 'Generate Shortest Paths', then clicking any other node to visualise the shortest path.
+        </div>
         <div id="project-container" class="w-full m-auto"></div>
-        <button id="startButtonDiv" onclick="changeBG()">Start</button>
-        <div id="frameRateDiv" class="border-2"></div>
-        <input type="range" min="1" max="100" value="50" class="w-full" id="myRange" />
+        <button id="startButtonDiv" class="border-2 p-1" onclick="setGenerateShortestPathsToTrue()">Generate Shortest Paths</button>
+        <div id="frameRateDiv" class="border-2 p-1"></div>
+        <!-- <input type="range" min="1" max="100" value="50" class="w-full" id="myRange" /> -->
       </div>
     </main>
-    <script src="main.js"></script>
+    <script src="main2.js"></script>
   </body>
 </html>

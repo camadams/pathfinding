@@ -1,16 +1,4 @@
 class Node {
-  // float x;
-  // float y;
-  // int r;
-  // int c;
-  // ArrayList<Node> neighbours;
-  // ArrayList<Node> cutOff;
-  // String state;
-  // float h;
-  // int g; // g(node) is the cost of the path from the start node to node
-  // float f; // f(node) = g(node) + h(node)
-  // Node prev;
-  // //String col = "";
   static CLOSED = 0;
   constructor(x, y, r, c) {
     this.x = x;
@@ -20,6 +8,8 @@ class Node {
     this.neighbours = [];
     this.cutOff = [];
     this.state = 'none';
+    this.prev = null;
+    this.minCostFromStart = Number.MAX_VALUE;
   }
 
   show() {
@@ -44,7 +34,7 @@ class Node {
     }
     stroke(40);
     //strokeWeight(0.9);
-    ellipse(this.x, this.y, 9, 9);
+    ellipse(this.x, this.y, 7);
 
     if (debug) {
       fill(0);
