@@ -5,8 +5,8 @@
 var debug = false;
 
 // ******************** PRAMAS TO PLAY WITH ***************
-var nodesPerRow = 2;
-var nodesPerCol = 2;
+var nodesPerRow = 10;
+var nodesPerCol = 10;
 var maxWeight = 200; // maxWeight of a red branch -- really makes the algo search long for cheaper paths if this is high
 var probabilityCutNeighbourConnection = 20; // sparsity of the graph
 var probabilityMakeEdgeMaxWeight = 200; // sparsity of the graph
@@ -23,6 +23,7 @@ var nextFlag = 'start';
 ////////////// Global variables for A star
 
 var generateShortestPaths = false;
+var hasBeenGenerated = false;
 var startNode;
 var endNode;
 var unvisited = []; // priority queuue of node objects
@@ -86,8 +87,10 @@ function setup() {
             nodes[r][c].neighbours.push(nodes[rN][cN]);
             var e = new Edge(nodes[r][c].x, nodes[r][c].y, nodes[rN][cN].x, nodes[rN][cN].y);
             var eLen = sqrt((e.x2 - e.x1) ** 2 + (e.y2 - e.y1) ** 2);
-            e.weight = map(eLen, 0, rowInterval * sqrt(2), maxWeight, 0);
-            e.col = lerpColor(best, worst, (e.weight / rowInterval) * sqrt(2));
+            var eLen = round(eLen, 2);
+            e.weight = eLen;
+            // e.weight = map(eLen, 0, rowInterval * sqrt(2), maxWeight, 0);
+            e.col = lerpColor(best, worst, e.weight / (rowInterval * sqrt(2)));
 
             edges[r * nodesPerRow + c][rN * nodesPerRow + cN] = e;
             edges[rN * nodesPerRow + cN][r * nodesPerRow + c] = e;
@@ -173,9 +176,8 @@ function getMin(arr) {
   arr.splice(idx, 1);
   return result;
 }
-var iter = 0;
 function generate() {
-  while (unvisited.length !== 0 && iter++ < 500) {
+  while (unvisited.length !== 0) {
     if (startNode === undefined) {
       alert('choose a start node');
       return;
@@ -202,50 +204,14 @@ function generate() {
 function draw() {
   if (generateShortestPaths == true) {
     generate();
-    console.log('done');
+    hasBeenGenerated = true;
     generateShortestPaths = false;
   }
   renderNodesEdgesAndFrameRate();
 
   if (endNode !== undefined || endNode != null) {
-    console.log('endNode defined');
-    console.log(endNode);
     drawPathToCurrentNode(endNode);
   }
-  // if (isRunning) {
-  //   var currentNode = findNextNode()[0];
-  //   var idx = findNextNode()[1];
-  //   handleNoNextNode(currentNode);
-  //   drawPathToCurrentNode(currentNode);
-  //   checkIfAtGoalNode(currentNode);
-
-  //   frontier.splice(idx, 1);
-  //   var y = currentNode.y;
-  //   var x = currentNode.x;
-  //   var r = currentNode.r;
-  //   var c = currentNode.c;
-
-  //   fill(225, 225, 10, 150);
-  //   ellipse(x, y, 20, 20);
-
-  //   // A star algorithm
-  //   if (clsd[r * nodesPerRow + c] > currentNode.g) {
-  //     clsd[r * nodesPerRow + c] = currentNode.g;
-  //     for (const nei of currentNode.neighbours) {
-  //       if (clsd[nei.r * nodesPerRow + nei.c] != Number.MAX_VALUE) {
-  //         continue;
-  //       }
-  //       // nei.h = sqrt(sq(endNode.x - nei.x) + sq(endNode.y - nei.y));
-  //       nei.h = 0;
-  //       nei.g = currentNode.g + edges[nei.r * nodesPerRow + nei.c][r * nodesPerRow + c].weight;
-  //       nei.f = nei.g + nei.h;
-  //       nei.prev = currentNode;
-  //       nei.state = 'open';
-  //       frontier.push(nei);
-  //     }
-  //   }
-  //   currentNode.state = Node.CLOSED;
-  // }
 }
 
 function keyPressed() {
@@ -262,22 +228,22 @@ function keyPressed() {
 function mouseClicked() {
   for (const nodeRow of nodes) {
     for (const n of nodeRow) {
-      if (dist(mouseX, mouseY, n.x, n.y) < 10) {
+      if (dist(mouseX, mouseY, n.x, n.y) < 5) {
+        if (hasBeenGenerated == true) {
+          endNode = n;
+          return;
+        }
         if (n.state != 'none') {
           n.state = 'none';
         } else if (nextFlag == 'start') {
           n.state = 'start';
           startNode = n;
-          startNode.g = 0;
           nextFlag = 'end';
           startNode.minCostFromStart = 0;
-          unvisited.push(startNode);
         } else {
           n.state = 'end';
           nextFlag = 'start';
           endNode = n;
-          startNode.h = int(sqrt(sq(endNode.x - startNode.x) + sq(endNode.y - startNode.y)));
-          startNode.f = startNode.g + startNode.h;
         }
       }
     }
