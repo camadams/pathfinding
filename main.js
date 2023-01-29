@@ -29,7 +29,7 @@ var endNode;
 var unvisited = []; // priority queuue of node objects
 var visited = []; //Map<Node, vareger>
 
-//////////// setup //////////////
+//////////// setup ///////////////
 // let button;
 function changeBG() {
   isRunning = true;
