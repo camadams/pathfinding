@@ -41,7 +41,10 @@ function setup() {
   ////////////////// Working with the DOM (not used for this OpenProcessing project) ///////////////////
   var canvas = createCanvas();
   canvas.parent('project-container');
-  resizeCanvas(document.getElementById('project-container').clientWidth, document.getElementById('project-container').clientWidth);
+  // var canvasSideLength = Math.min(document.getElementById('project-container').clientWidth, document.getElementById('project-container').clientHeight);
+  var canvasSideLength = Math.min(document.getElementById('project-container').clientWidth, 500);
+  // var canvasSideLength = document.getElementById('project-container').clientWidth;
+  resizeCanvas(canvasSideLength, canvasSideLength);
   background(230);
   var rowInterval = width / nodesPerRow; // height divided by rowvarerval = #rows of nodes
   var colInterval = height / nodesPerCol; // width divided by colvarerval = #cols of nodes
